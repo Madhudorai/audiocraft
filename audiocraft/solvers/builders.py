@@ -28,6 +28,7 @@ except ImportError:
 
 from .base import StandardSolver
 from .. import adversarial, data, losses, metrics, optim
+from ..data.eigenscape_dataset import create_eigenscape_dataloader, create_eigenscape_train_val_dataloaders
 from ..utils.utils import dict_from_config, get_loader
 
 
@@ -39,6 +40,7 @@ class DatasetType(Enum):
     MUSIC = "music"
     SOUND = "sound"
     JASCO = "jasco"
+    EIGENSCAPE = "eigenscape"
 
 
 def get_solver(cfg: omegaconf.DictConfig) -> StandardSolver:
@@ -360,6 +362,53 @@ def get_audio_datasets(cfg: omegaconf.DictConfig,
             dataset = data.info_audio_dataset.InfoAudioDataset.from_meta(path, return_info=return_info, **kwargs)
         elif dataset_type == DatasetType.JASCO:
             dataset = data.jasco_dataset.JascoDataset.from_meta(path, return_info=return_info, **kwargs)
+        elif dataset_type == DatasetType.EIGENSCAPE:
+            # Use eigenscape dataloader directly
+            train_folders = cfg.get('train_folders', [])
+            val_folders = cfg.get('val_folders', [])
+            min_file_duration = cfg.get('min_file_duration', None)
+            
+            if split in ['train', 'valid']:
+                # Create both train and val dataloaders at once for eigenscape
+                if split == 'train':
+                    # Create kwargs for eigenscape function, excluding parameters that are popped
+                    # Remove segment_duration from kwargs to avoid duplicate parameter
+                    eigenscape_kwargs = {k: v for k, v in kwargs.items() if k != 'segment_duration'}
+                    eigenscape_kwargs.update({
+                        'audio_dir': path,
+                        'train_dataset_size': cfg.dataset.train.num_samples,
+                        'val_dataset_size': cfg.dataset.valid.num_samples,
+                        'train_folders': train_folders,
+                        'val_folders': val_folders,
+                        'min_file_duration': min_file_duration,
+                    })
+                    
+                    train_loader, val_loader = create_eigenscape_train_val_dataloaders(**eigenscape_kwargs)
+                    dataloaders['train'] = train_loader
+                    dataloaders['valid'] = val_loader
+                    continue
+                else:  # valid split
+                    continue  # Already created above
+            else:
+                # For evaluate/generate, use single dataloader
+                # Remove segment_duration from kwargs to avoid duplicate parameter
+                eigenscape_kwargs = {k: v for k, v in kwargs.items() if k != 'segment_duration'}
+                dataloader = create_eigenscape_dataloader(
+                    audio_dir=path,
+                    batch_size=batch_size,
+                    sample_rate=sample_rate,
+                    segment_duration=kwargs.get('segment_duration', 1.0),
+                    channels=channels,
+                    num_workers=num_workers,
+                    shuffle=shuffle,
+                    dataset_size=num_samples,
+                    train_folders=train_folders,
+                    val_folders=val_folders,
+                    min_file_duration=min_file_duration,
+                    **eigenscape_kwargs
+                )
+                dataloaders[split] = dataloader
+                continue
         else:
             raise ValueError(f"Dataset type is unsupported: {dataset_type}")
 

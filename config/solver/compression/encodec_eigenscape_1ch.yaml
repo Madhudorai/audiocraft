@@ -1,0 +1,115 @@
+# @package __global__
+
+defaults:
+  - compression/default
+  - /model: encodec/encodec_base_causal
+  - override /dset: eigenscape_1ch
+  - _self_
+
+# 1-channel configuration for eigenscape data
+channels: 1
+sample_rate: 24000
+
+# Training configuration optimized for eigenscape data
+dataset:
+  batch_size: 32
+  num_workers: 8
+  segment_duration: 1.0
+  
+  train:
+    num_samples: 8000  # 8000 samples per epoch
+    batch_size: 32
+    
+  valid:
+    num_samples: 2000  # 2000 validation samples
+    batch_size: 32
+
+# Loss configuration for 1-channel audio
+losses:
+  adv: 4.0
+  feat: 4.0
+  l1: 0.1
+  mel: 0.0
+  msspec: 2.0
+  sisnr: 0.0
+
+# Adversarial configuration
+adversarial:
+  every: 1
+  adversaries: [msstftd]
+  adv_loss: hinge
+  feat_loss: l1
+
+# MS-STFT discriminator for 1-channel
+msstftd:
+  in_channels: 1
+  out_channels: 1
+  filters: 32
+  norm: weight_norm
+  n_ffts: [1024, 2048, 512, 256, 128]
+  hop_lengths: [256, 512, 128, 64, 32]
+  win_lengths: [1024, 2048, 512, 256, 128]
+  activation: LeakyReLU
+  activation_params: {negative_slope: 0.3}
+
+# Mel spectrogram configuration for 1-channel
+mel:
+  sample_rate: 24000
+  n_fft: 1024
+  hop_length: 256
+  win_length: 1024
+  n_mels: 64
+  f_min: 64
+  f_max: null
+  normalized: false
+  floor_level: 1e-5
+
+# Multi-scale spectrogram for 1-channel
+msspec:
+  sample_rate: 24000
+  range_start: 6
+  range_end: 11
+  n_mels: 64
+  f_min: 64
+  f_max: null
+  normalized: true
+  alphas: false
+  floor_level: 1e-5
+
+# SI-SNR configuration
+sisnr:
+  sample_rate: 24000
+  segment: 5.0
+
+# Training schedule
+optim:
+  epochs: 300  # Match baseline training
+  updates_per_epoch: 2000  # Match baseline
+  lr: 3e-4
+  max_norm: 0.0
+  optimizer: adam
+  adam:
+    betas: [0.5, 0.9]
+    weight_decay: 0.0
+
+# Evaluation schedule
+evaluate:
+  every: 25
+  num_workers: 4
+  metrics:
+    visqol: false
+    sisnr: true
+
+# Generation schedule
+generate:
+  every: 25
+  num_workers: 4
+  audio:
+    sample_rate: 24000
+
+# Checkpointing
+checkpoint:
+  save_last: true
+  save_every: 25
+  keep_last: 10
+  keep_every_states: null

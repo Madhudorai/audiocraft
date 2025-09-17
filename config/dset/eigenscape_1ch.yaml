@@ -1,0 +1,60 @@
+# @package __global__
+
+defaults:
+  - audio/default
+
+# Dataset type
+dataset_type: eigenscape
+
+# Dataset configuration for eigenscape data in 1-channel mode
+dataset:
+  batch_size: 32
+  num_workers: 8
+  segment_duration: 1.0  # 1 second segments like baseline
+  
+  train:
+    num_samples: 8000  # 8000 samples per epoch (2000 updates × batch_size)
+    batch_size: 32
+    
+  valid:
+    num_samples: 2000  # 2000 validation samples
+    batch_size: 32
+    
+  evaluate:
+    num_samples: 2000
+    batch_size: 32
+    
+  generate:
+    num_samples: 50
+    batch_size: 8
+    segment_duration: 10.0
+
+# Data source configuration
+datasource:
+  max_sample_rate: 24000
+  max_channels: 1
+  
+  train: "/scratch/eigenscape"
+  valid: "/scratch/eigenscape"
+  evaluate: "/scratch/eigenscape"
+  generate: "/scratch/eigenscape"
+
+# Audio configuration
+sample_rate: 24000
+channels: 1  # 1-channel mode as requested
+
+# Folder configuration for eigenscape data
+train_folders: ["Airport", "Bus", "Metro", "Metro Station", "Park", "Public Square", "Shopping Centre"]
+val_folders: ["Woodland", "Train Station"]
+
+# File extensions to include
+file_extensions: [".wav", ".WAV"]
+
+# Minimum file duration (in seconds)
+min_file_duration: 1.0
+
+# Random crop for training
+random_crop: true
+
+# Cache settings
+cache_size: 100

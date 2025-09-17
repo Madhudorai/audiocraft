@@ -67,7 +67,8 @@ class CompressionSolver(base.StandardSolver):
 
     def build_dataloaders(self):
         """Instantiate audio dataloaders for each stage."""
-        self.dataloaders = builders.get_audio_datasets(self.cfg)
+        dataset_type = builders.DatasetType(self.cfg.get('dataset_type', 'audio'))
+        self.dataloaders = builders.get_audio_datasets(self.cfg, dataset_type)
 
     def show(self):
         """Show the compression model and employed adversarial loss."""
